@@ -1,6 +1,7 @@
 ### dependency
 streamlit
 numpy
+pickle
 
 ### local packages -
 -e . 
