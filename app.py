@@ -1,77 +1,65 @@
-'''
-Author: Mohd Monish
-Email: mohdmonishk1998@gmail.com
-Date: 2023-June-9
-'''
-
 import pickle
 import streamlit as st
 import numpy as np
 
+popular_df = pickle.load(open('popular.pkl','rb'))
+pt = pickle.load(open('pt.pkl','rb'))
+books = pickle.load(open('books.pkl','rb'))
+similarity_scores = pickle.load(open('similarity_scores.pkl','rb'))
 
-st.header('Book Recommendation System Using Machine Learning')
-model = pickle.load(open('artifacts/model.pkl','rb'))
-book_names = pickle.load(open('artifacts/book_names.pkl','rb'))
-final_rating = pickle.load(open('artifacts/final_rating.pkl','rb'))
-book_pivot = pickle.load(open('artifacts/book_pivot.pkl','rb'))
-
-
-def fetch_poster(suggestion):
-    book_name = []
-    ids_index = []
-    poster_url = []
-
-    for book_id in suggestion:
-        book_name.append(book_pivot.index[book_id])
-
-    for name in book_name[0]: 
-        ids = np.where(final_rating['title'] == name)[0][0]
-        ids_index.append(ids)
-
-    for idx in ids_index:
-        url = final_rating.iloc[idx]['image_url']
-        poster_url.append(url)
-
-    return poster_url
-
-
-
-def recommend_book(book_name):
-    books_list = []
-    book_id = np.where(book_pivot.index == book_name)[0][0]
-    distance, suggestion = model.kneighbors(book_pivot.iloc[book_id,:].values.reshape(1,-1), n_neighbors=6 )
-
-    poster_url = fetch_poster(suggestion)
-    
-    for i in range(len(suggestion)):
-            books = book_pivot.index[suggestion[i]]
-            for j in books:
-                books_list.append(j)
-    return books_list , poster_url       
-
-
+st.header('Book Recommendations System')
 
 selected_books = st.selectbox(
-    "Type or select a book from the dropdown",
-    book_names
+    "Select a book or type book name to see similar recommendations:",
+    books["Book-Title"]
 )
 
-if st.button('Show Recommendation'):
-    recommended_books,poster_url = recommend_book(selected_books)
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.text(recommended_books[1])
-        st.image(poster_url[1])
-    with col2:
-        st.text(recommended_books[2])
-        st.image(poster_url[2])
+def recommendations(book_name):
+    if book_name not in pt.index:
+        st.write("This book is not in our list, please try again.")
+        return None
+    else:
+        index = pt.index.get_loc(book_name)
+        similar_items = np.argsort(similarity_scores[index])[-6:][::-1]
+        similar_book_titles = pt.index[similar_items]
+        similar_books = books[books['Book-Title'].isin(similar_book_titles)]
+        return similar_books
 
-    with col3:
-        st.text(recommended_books[3])
-        st.image(poster_url[3])
-    with col4:
-        st.text(recommended_books[4])
-        st.image(poster_url[4])
-    with col5:
-        st.text(recommended_books[5])
-        st.image(poster_url[5])
+if st.button('Show Recommendations'):
+    result = recommendations(selected_books)
+    if result is not None:
+        col1, col2, col3 = st.columns(3)
+        for i in range(len(result)):
+            if i % 3 == 0:
+                with col1:
+                    st.image(result.iloc[i, result.columns.get_loc('Image-URL-M')], width=150)
+                    st.write(result.iloc[i, result.columns.get_loc('Book-Title')])
+                    st.write(result.iloc[i, result.columns.get_loc('Book-Author')])
+            elif i % 3 == 1:
+                with col2:
+                    st.image(result.iloc[i, result.columns.get_loc('Image-URL-M')], width=150)
+                    st.write(result.iloc[i, result.columns.get_loc('Book-Title')])
+                    st.write(result.iloc[i, result.columns.get_loc('Book-Author')])
+            else:
+                with col3:
+                    st.image(result.iloc[i, result.columns.get_loc('Image-URL-M')], width=150)
+                    st.write(result.iloc[i, result.columns.get_loc('Book-Title')])
+                    st.write(result.iloc[i, result.columns.get_loc('Book-Author')])
+def popular_books():
+    st.header("Popular Books")
+    books_df = popular_df.head(100)
+    col1, col2 = st.columns(2)
+    for i in range(0, books_df.shape[0], 2):
+        if i + 1 < books_df.shape[0]:
+            with col1:
+                st.image(books_df.iloc[i]["Image-URL-M"], width=150)
+                st.write(books_df.iloc[i]["Book-Title"])
+                st.write(books_df.iloc[i]['Book-Author'])
+            with col2:
+                st.image(books_df.iloc[i + 1]["Image-URL-M"], width=150)
+                st.write(books_df.iloc[i + 1]["Book-Title"])
+                st.write(books_df.iloc[i + 1]['Book-Author'])
+
+
+if st.sidebar.button("Popular Books"):
+    popular_books()
