@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 REPO_NAME = "Books-Recommendation-System-Using-Machine-Learning"
 AUTHOR_USER_NAME = "Mohd Monish"
 SRC_REPO = "src"
-LIST_OF_REQUIREMENTS = ['streamlit', 'numpy']
+LIST_OF_REQUIREMENTS = ['streamlit', 'numpy', 'pickle']
 
 
 setup(
